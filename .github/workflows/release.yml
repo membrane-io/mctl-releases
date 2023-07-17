@@ -5,12 +5,13 @@ on: workflow_dispatch
 jobs:
   release:
     runs-on: ubuntu-latest
-    needs: [build-linux, build-macos-x86]
     steps:
       - uses: actions/checkout@v3
-      - name: Determine version
         with:
           repository: membrane-io/mnode
+          token: ${{ secrets.GITHUB }}
+
+      - name: Determine version
         id: version
         run: |
           cd mctl
