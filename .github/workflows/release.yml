@@ -1,4 +1,4 @@
-name: Artifact to release
+name: Create Release
 
 on: workflow_dispatch
 
@@ -30,7 +30,5 @@ jobs:
           name: "Membrane mctl"
           tag_name: ${{steps.version.outputs.VERSION}}
           fail_on_unmatched_files: false
-          # create a personal access token
-          # with permissions to create releases in the other repo
           token: ${{ secrets.GITHUB }}
           files: mctl-${{steps.version.outputs.VERSION}}-linux-x86.zip
