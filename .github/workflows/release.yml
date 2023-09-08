@@ -9,7 +9,7 @@ jobs:
       - uses: actions/checkout@v3
         with:
           repository: membrane-io/mnode
-          token: ${{ secrets.GITHUB }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Determine version
         id: version
@@ -21,7 +21,7 @@ jobs:
         uses: bettermarks/action-artifact-download@0.3.0
         with:
           repo: membrane-io/mnode
-          token: ${{ secrets.GITHUB }}
+          token: ${{ secrets.GITHUB_TOKEN }}
           artifact_name: mctl-${{steps.version.outputs.VERSION}}-linux-x86.zip
           wait_seconds: 60
 
@@ -29,7 +29,7 @@ jobs:
         uses: bettermarks/action-artifact-download@0.3.0
         with:
           repo: membrane-io/mnode
-          token: ${{ secrets.GITHUB }}
+          token: ${{ secrets.GITHUB_TOKEN }}
           artifact_name: mctl-${{steps.version.outputs.VERSION}}-macos-x86.zip
           wait_seconds: 60
 
@@ -37,7 +37,7 @@ jobs:
         uses: bettermarks/action-artifact-download@0.3.0
         with:
           repo: membrane-io/mnode
-          token: ${{ secrets.GITHUB }}
+          token: ${{ secrets.GITHUB_TOKEN }}
           artifact_name: mctl-${{steps.version.outputs.VERSION}}-macos-arm.zip
           wait_seconds: 60
 
@@ -50,7 +50,7 @@ jobs:
           name: "Membrane mctl"
           tag_name: ${{steps.version.outputs.VERSION}}
           fail_on_unmatched_files: false
-          token: ${{ secrets.GITHUB }}
+          token: ${{ secrets.GITHUB_TOKEN }}
           files: |
             mctl-${{steps.version.outputs.VERSION}}-*.zip
             sha256.txt
