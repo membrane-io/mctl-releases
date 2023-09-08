@@ -41,6 +41,9 @@ jobs:
           artifact_name: mctl-${{steps.version.outputs.VERSION}}-macos-arm.zip
           wait_seconds: 60
 
+      - name: Compute SHA256
+        run: sha256sum mctl-*.zip > sha256.txt
+
       - name: Publish release
         uses: softprops/action-gh-release@v1
         with:
@@ -48,4 +51,6 @@ jobs:
           tag_name: ${{steps.version.outputs.VERSION}}
           fail_on_unmatched_files: false
           token: ${{ secrets.GITHUB }}
-          files: mctl-${{steps.version.outputs.VERSION}}-*.zip
+          files: |
+            mctl-${{steps.version.outputs.VERSION}}-*.zip
+            sha256.txt
