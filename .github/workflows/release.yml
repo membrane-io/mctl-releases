@@ -23,7 +23,6 @@ jobs:
           repo: membrane-io/mnode
           token: ${{ secrets.GITHUB }}
           artifact_name: mctl-${{steps.version.outputs.VERSION}}-linux-x86.zip
-          wait_seconds: 60
 
       - name: Download MacOS x86 artifact
         uses: bettermarks/action-artifact-download@0.3.0
@@ -31,7 +30,6 @@ jobs:
           repo: membrane-io/mnode
           token: ${{ secrets.GITHUB }}
           artifact_name: mctl-${{steps.version.outputs.VERSION}}-macos-x86.zip
-          wait_seconds: 60
 
       - name: Download MacOS Arm artifact
         uses: bettermarks/action-artifact-download@0.3.0
@@ -39,7 +37,13 @@ jobs:
           repo: membrane-io/mnode
           token: ${{ secrets.GITHUB }}
           artifact_name: mctl-${{steps.version.outputs.VERSION}}-macos-arm.zip
-          wait_seconds: 60
+
+      - name: Download MacOS Arm artifact
+        uses: bettermarks/action-artifact-download@0.3.0
+        with:
+          repo: membrane-io/mnode
+          token: ${{ secrets.GITHUB }}
+          artifact_name: mctl-${{steps.version.outputs.VERSION}}-windows.zip
 
       - name: Compute SHA256
         run: sha256sum mctl-*.zip > sha256.txt
