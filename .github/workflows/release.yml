@@ -45,8 +45,17 @@ jobs:
           token: ${{ secrets.GITHUB }}
           artifact_name: mctl-${{steps.version.outputs.VERSION}}-windows.zip
 
+      - name: Unzip zips
+        run: |
+          mkdir out
+          unzip mctl-${{steps.version.outputs.VERSION}}-linux-x86.zip -d out/
+          unzip mctl-${{steps.version.outputs.VERSION}}-macos-x86.zip -d out/
+          unzip mctl-${{steps.version.outputs.VERSION}}-macos-arm.zip -d out/
+          unzip mctl-${{steps.version.outputs.VERSION}}-windows.zip -d out/
+          ls out
+
       - name: Compute SHA256
-        run: sha256sum mctl-*.zip > sha256.txt
+        run: sha256sum out/mctl-*.zip > sha256.txt
 
       - name: Publish release
         uses: softprops/action-gh-release@v1
@@ -56,5 +65,5 @@ jobs:
           fail_on_unmatched_files: false
           token: ${{ secrets.GITHUB_TOKEN }}
           files: |
-            mctl-${{steps.version.outputs.VERSION}}-*.zip
+            out/mctl-${{steps.version.outputs.VERSION}}-*.zip
             sha256.txt
