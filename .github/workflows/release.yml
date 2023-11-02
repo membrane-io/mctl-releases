@@ -44,7 +44,6 @@ jobs:
             exit 1
           fi
 
-
       - name: Download Linux x86 artifact
         uses: bettermarks/action-artifact-download@0.3.0
         with:
