@@ -17,6 +17,34 @@ jobs:
           cd mctl
           echo "VERSION=$(cat Cargo.toml | grep -E '^version *= *".*' | awk '{print $3}' | tr -d '"')" >> "$GITHUB_OUTPUT"
 
+      - name: Verify Cargo Version
+        run: |
+          tag_version="${{ steps.version.outputs.VERSION }}"
+          cargo_version=$(cat mctl/Cargo.toml | grep -E '^version *= *".*' | awk '{print $3}' | tr -d '"')
+
+          if [ "$tag_version" != "$cargo_version" ]; then
+            echo "Tag version ($tag_version) and Cargo.toml version ($cargo_version) do not match. Aborting the workflow."
+            exit 1
+          fi
+      
+      - name: Verify if release exists
+        id: release_exists
+        run: |
+          existing_tags=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/repos/membrane-io/mnode/tags")
+          tag_version="${{ steps.version.outputs.VERSION }}"
+          tag_exists=false
+          for tag in $(echo "$existing_tags" | jq -r '.[].name'); do
+            if [ "$tag" = "$tag_version" ]; then
+              tag_exists=true
+              break
+            fi
+          done
+          if [ "$tag_exists" = true ]; then
+            echo "Release $tag_version already exists. Aborting the workflow."
+            exit 1
+          fi
+
+
       - name: Download Linux x86 artifact
         uses: bettermarks/action-artifact-download@0.3.0
         with:
