@@ -48,7 +48,8 @@ jobs:
             exit 1
           fi
 
-      - name: Find and download artifacts
+      - name: Find latest build workflow run ID
+        id: find_run
         run: |
           # Install GitHub CLI
           curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
@@ -59,56 +60,36 @@ jobs:
           # Authenticate
           echo "${{ secrets.GITHUB }}" | gh auth login --with-token
           
-          # Find the latest successful run
-          echo "Finding the latest successful build run..."
-          LATEST_RUN_ID=$(gh api repos/membrane-io/mnode/actions/runs?status=completed&per_page=20 | \
+          # Find the latest successful run that has the artifacts we need
+          LATEST_RUN_ID=$(gh api repos/membrane-io/mnode/actions/runs?status=completed&per_page=100 | \
                          jq -r '.workflow_runs[] | select(.name == "Build") | .id' | head -n 1)
-          
-          if [ -z "$LATEST_RUN_ID" ]; then
-            echo "Could not find a successful build run"
-            exit 1
-          fi
+          echo "RUN_ID=$LATEST_RUN_ID" >> "$GITHUB_OUTPUT"
           
           echo "Latest successful build run ID: $LATEST_RUN_ID"
-          
+      
+      - name: Download artifacts using GitHub CLI
+        run: |
           # Create directory for artifacts
           mkdir -p artifacts
+          cd artifacts
           
-          # Download artifacts one by one
-          echo "Downloading Linux x86 artifact..."
-          gh api -X GET "repos/membrane-io/mnode/actions/runs/$LATEST_RUN_ID/artifacts" | \
-            jq -r ".artifacts[] | select(.name == \"mctl-${{steps.version.outputs.VERSION}}-linux-x86.zip\") | .archive_download_url" | \
-            xargs -I {} curl -L -o "artifacts/linux-x86.zip" -H "Authorization: Bearer ${{ secrets.GITHUB }}" {}
+          # Download artifacts using GitHub CLI
+          gh run download ${{ steps.find_run.outputs.RUN_ID }} --repo membrane-io/mnode --name "mctl-${{steps.version.outputs.VERSION}}-linux-x86.zip"
+          gh run download ${{ steps.find_run.outputs.RUN_ID }} --repo membrane-io/mnode --name "mctl-${{steps.version.outputs.VERSION}}-macos-x86.zip"
+          gh run download ${{ steps.find_run.outputs.RUN_ID }} --repo membrane-io/mnode --name "mctl-${{steps.version.outputs.VERSION}}-macos-arm.zip"
+          gh run download ${{ steps.find_run.outputs.RUN_ID }} --repo membrane-io/mnode --name "mctl-${{steps.version.outputs.VERSION}}-windows.zip"
           
-          echo "Downloading MacOS x86 artifact..."
-          gh api -X GET "repos/membrane-io/mnode/actions/runs/$LATEST_RUN_ID/artifacts" | \
-            jq -r ".artifacts[] | select(.name == \"mctl-${{steps.version.outputs.VERSION}}-macos-x86.zip\") | .archive_download_url" | \
-            xargs -I {} curl -L -o "artifacts/macos-x86.zip" -H "Authorization: Bearer ${{ secrets.GITHUB }}" {}
-          
-          echo "Downloading MacOS Arm artifact..."
-          gh api -X GET "repos/membrane-io/mnode/actions/runs/$LATEST_RUN_ID/artifacts" | \
-            jq -r ".artifacts[] | select(.name == \"mctl-${{steps.version.outputs.VERSION}}-macos-arm.zip\") | .archive_download_url" | \
-            xargs -I {} curl -L -o "artifacts/macos-arm.zip" -H "Authorization: Bearer ${{ secrets.GITHUB }}" {}
-          
-          echo "Downloading Windows artifact..."
-          gh api -X GET "repos/membrane-io/mnode/actions/runs/$LATEST_RUN_ID/artifacts" | \
-            jq -r ".artifacts[] | select(.name == \"mctl-${{steps.version.outputs.VERSION}}-windows.zip\") | .archive_download_url" | \
-            xargs -I {} curl -L -o "artifacts/windows.zip" -H "Authorization: Bearer ${{ secrets.GITHUB }}" {}
-          
-          # Verify downloads and rename to original names
-          ls -la artifacts/
-          mv artifacts/linux-x86.zip mctl-${{steps.version.outputs.VERSION}}-linux-x86.zip
-          mv artifacts/macos-x86.zip mctl-${{steps.version.outputs.VERSION}}-macos-x86.zip
-          mv artifacts/macos-arm.zip mctl-${{steps.version.outputs.VERSION}}-macos-arm.zip
-          mv artifacts/windows.zip mctl-${{steps.version.outputs.VERSION}}-windows.zip
+          # Go back to working directory and list files
+          cd ..
+          ls -la artifacts
 
       - name: Unzip zips
         run: |
           mkdir -p out
-          unzip mctl-${{steps.version.outputs.VERSION}}-linux-x86.zip -d out/
-          unzip mctl-${{steps.version.outputs.VERSION}}-macos-x86.zip -d out/
-          unzip mctl-${{steps.version.outputs.VERSION}}-macos-arm.zip -d out/
-          unzip mctl-${{steps.version.outputs.VERSION}}-windows.zip -d out/
+          unzip artifacts/mctl-${{steps.version.outputs.VERSION}}-linux-x86.zip -d out/
+          unzip artifacts/mctl-${{steps.version.outputs.VERSION}}-macos-x86.zip -d out/
+          unzip artifacts/mctl-${{steps.version.outputs.VERSION}}-macos-arm.zip -d out/
+          unzip artifacts/mctl-${{steps.version.outputs.VERSION}}-windows.zip -d out/
           ls out
 
       # Setup for NPM publishing
