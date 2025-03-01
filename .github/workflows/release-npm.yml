@@ -68,28 +68,28 @@ jobs:
           echo "Latest successful build run ID: $LATEST_RUN_ID"
       
       - name: Download Linux x86 artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: mctl-${{steps.version.outputs.VERSION}}-linux-x86.zip
           github-token: ${{ secrets.GITHUB }}
           run-id: ${{ steps.find_run.outputs.RUN_ID }}
       
       - name: Download MacOS x86 artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: mctl-${{steps.version.outputs.VERSION}}-macos-x86.zip
           github-token: ${{ secrets.GITHUB }}
           run-id: ${{ steps.find_run.outputs.RUN_ID }}
       
       - name: Download MacOS Arm artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: mctl-${{steps.version.outputs.VERSION}}-macos-arm.zip
           github-token: ${{ secrets.GITHUB }}
           run-id: ${{ steps.find_run.outputs.RUN_ID }}
       
       - name: Download Windows artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: mctl-${{steps.version.outputs.VERSION}}-windows.zip
           github-token: ${{ secrets.GITHUB }}
