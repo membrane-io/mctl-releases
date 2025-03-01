@@ -37,6 +37,7 @@ jobs:
           existing_tags=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/repos/membrane-io/mnode/tags")
           tag_version="${{ steps.version.outputs.VERSION }}"
           tag_exists=false
+
           for tag in $(echo "$existing_tags" | jq -r '.[].name'); do
             if [ "$tag" = "$tag_version" ]; then
               tag_exists=true
