@@ -75,7 +75,7 @@ jobs:
           
           # Download artifacts using GitHub CLI
           gh run download ${{ steps.find_run.outputs.RUN_ID }} --repo membrane-io/mnode --name "mctl-${{steps.version.outputs.VERSION}}-linux-x86.zip"
-          gh run download ${{ steps.find_run.outputs.RUN_ID }} --repo membrane-io/mnode --name "mctl-${{steps.version.outputs.VERSION}}-macos-x86.zip"
+          # gh run download ${{ steps.find_run.outputs.RUN_ID }} --repo membrane-io/mnode --name "mctl-${{steps.version.outputs.VERSION}}-macos-x86.zip"
           gh run download ${{ steps.find_run.outputs.RUN_ID }} --repo membrane-io/mnode --name "mctl-${{steps.version.outputs.VERSION}}-macos-arm.zip"
           gh run download ${{ steps.find_run.outputs.RUN_ID }} --repo membrane-io/mnode --name "mctl-${{steps.version.outputs.VERSION}}-windows.zip"
           
@@ -87,7 +87,7 @@ jobs:
         run: |
           mkdir -p out
           unzip artifacts/mctl-${{steps.version.outputs.VERSION}}-linux-x86.zip -d out/
-          unzip artifacts/mctl-${{steps.version.outputs.VERSION}}-macos-x86.zip -d out/
+          # unzip artifacts/mctl-${{steps.version.outputs.VERSION}}-macos-x86.zip -d out/
           unzip artifacts/mctl-${{steps.version.outputs.VERSION}}-macos-arm.zip -d out/
           unzip artifacts/mctl-${{steps.version.outputs.VERSION}}-windows.zip -d out/
           ls out
@@ -104,7 +104,7 @@ jobs:
           mkdir -p npm-package/bin
           # Move binaries to the proper locations with correct names
           cp out/mctl-${{steps.version.outputs.VERSION}}-linux-x86/mctl npm-package/bin/mctl-linux
-          cp out/mctl-${{steps.version.outputs.VERSION}}-macos-x86/mctl npm-package/bin/mctl-macos
+          # cp out/mctl-${{steps.version.outputs.VERSION}}-macos-x86/mctl npm-package/bin/mctl-macos
           cp out/mctl-${{steps.version.outputs.VERSION}}-macos-arm/mctl npm-package/bin/mctl-macos-arm64
           cp out/mctl-${{steps.version.outputs.VERSION}}-windows/mctl.exe npm-package/bin/mctl.exe
           chmod +x npm-package/bin/*
