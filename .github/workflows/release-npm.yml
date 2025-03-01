@@ -88,7 +88,7 @@ jobs:
           # Rename and place in out
           mv out/linux-x86/mctl out/mctl-linux
           # mv out/macos/mctl out/mctl-macos
-          mv out/macos-arm/mctl out/mctl-macos-arm64
+          mv out/macos-arm/mctl out/mctl-macos-arm
           mv out/windows/mctl.exe out/mctl-windows.exe
 
           ls out
@@ -106,7 +106,7 @@ jobs:
           # Move binaries to the proper locations with correct names
           cp out/mctl-linux npm-package/bin/mctl-linux
           # cp out/mctl-macos npm-package/bin/mctl-macos
-          cp out/mctl-macos-arm npm-package/bin/mctl-macos-arm64
+          cp out/mctl-macos-arm npm-package/bin/mctl-macos-arm
           cp out/mctl-windows.exe npm-package/bin/mctl.exe
           chmod +x npm-package/bin/*
 
@@ -116,7 +116,7 @@ jobs:
           {
             "name": "@membrane/mctl",
             "version": "${{ steps.version.outputs.VERSION }}",
-            "description": "Membrane Control CLI tool",
+            "description": "Membrane CLI",
             "bin": {
               "mctl": "index.js"
             },
@@ -134,14 +134,14 @@ jobs:
             ],
             "repository": {
               "type": "git",
-              "url": "git+https://github.com/membrane-io/mnode.git"
+              "url": "git+https://github.com/membrane-io/mctl-releases.git"
             },
             "author": "Membrane",
             "license": "MIT",
             "bugs": {
-              "url": "https://github.com/membrane-io/mnode/issues"
+              "url": "https://github.com/membrane-io/mctl-releases/issues"
             },
-            "homepage": "https://github.com/membrane-io/mnode#readme"
+            "homepage": "https://github.com/membrane-io/mctl-releases#readme"
           }
           EOL
 
