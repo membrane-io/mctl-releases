@@ -79,11 +79,18 @@ jobs:
 
       - name: Unzip zips
         run: |
-          mkdir -p out
-          unzip artifacts/mctl-${{steps.version.outputs.VERSION}}-linux-x86.zip -d out/
-          # unzip artifacts/mctl-${{steps.version.outputs.VERSION}}-macos-x86.zip -d out/
-          unzip artifacts/mctl-${{steps.version.outputs.VERSION}}-macos-arm.zip -d out/
-          unzip artifacts/mctl-${{steps.version.outputs.VERSION}}-windows.zip -d out/
+          mkdir -p out/{linux-x86,macos-arm,macos-x86,windows}
+          unzip artifacts/mctl-${{steps.version.outputs.VERSION}}-linux-x86.zip -d out/linux-x86
+          # unzip artifacts/mctl-${{steps.version.outputs.VERSION}}-macos-x86.zip -d out/macos
+          unzip artifacts/mctl-${{steps.version.outputs.VERSION}}-macos-arm.zip -d out/macos-arm
+          unzip artifacts/mctl-${{steps.version.outputs.VERSION}}-windows.zip -d out/windows
+
+          # Rename and place in out
+          mv out/linux-x86/mctl out/mctl-linux
+          # mv out/macos/mctl out/mctl-macos
+          mv out/macos-arm/mctl out/mctl-macos-arm64
+          mv out/windows/mctl.exe out/mctl-windows.exe
+
           ls out
 
       # Setup for NPM publishing
@@ -97,10 +104,10 @@ jobs:
         run: |
           mkdir -p npm-package/bin
           # Move binaries to the proper locations with correct names
-          cp out/mctl-${{steps.version.outputs.VERSION}}-linux-x86/mctl npm-package/bin/mctl-linux
-          # cp out/mctl-${{steps.version.outputs.VERSION}}-macos-x86/mctl npm-package/bin/mctl-macos
-          cp out/mctl-${{steps.version.outputs.VERSION}}-macos-arm/mctl npm-package/bin/mctl-macos-arm64
-          cp out/mctl-${{steps.version.outputs.VERSION}}-windows/mctl.exe npm-package/bin/mctl.exe
+          cp out/mctl-linux npm-package/bin/mctl-linux
+          # cp out/mctl-macos npm-package/bin/mctl-macos
+          cp out/mctl-macos-arm npm-package/bin/mctl-macos-arm64
+          cp out/mctl-windows.exe npm-package/bin/mctl.exe
           chmod +x npm-package/bin/*
 
       - name: Create package.json
@@ -158,7 +165,7 @@ jobs:
             binPath = path.join(__dirname, 'bin', 'mctl.exe');
           } else if (platform === 'darwin') {
             if (arch === 'arm64') {
-              binPath = path.join(__dirname, 'bin', 'mctl-macos-arm64');
+              binPath = path.join(__dirname, 'bin', 'mctl-macos-arm');
             } else {
               binPath = path.join(__dirname, 'bin', 'mctl-macos');
             }
