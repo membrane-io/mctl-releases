@@ -48,33 +48,55 @@ jobs:
             exit 1
           fi
 
+      - name: Find latest build workflow run ID
+        id: find_run
+        run: |
+          # Install GitHub CLI
+          curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
+          echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+          sudo apt update
+          sudo apt install gh
+          
+          # Authenticate
+          echo "${{ secrets.GITHUB }}" | gh auth login --with-token
+          
+          # Find the latest successful run that has the artifacts we need
+          LATEST_RUN_ID=$(gh api repos/membrane-io/mnode/actions/runs?status=completed&per_page=100 | \
+                         jq -r '.workflow_runs[] | select(.name == "Build") | .id' | head -n 1)
+          echo "RUN_ID=$LATEST_RUN_ID" >> "$GITHUB_OUTPUT"
+          
+          echo "Latest successful build run ID: $LATEST_RUN_ID"
+      
       - name: Download Linux x86 artifact
-        uses: bettermarks/action-artifact-download@0.3.0
+        uses: actions/download-artifact@v3
         with:
-          repo: membrane-io/mnode
-          token: ${{ secrets.GITHUB }}
-          artifact_name: mctl-${{steps.version.outputs.VERSION}}-linux-x86.zip
-
+          name: mctl-${{steps.version.outputs.VERSION}}-linux-x86.zip
+          github-token: ${{ secrets.GITHUB }}
+          run-id: ${{ steps.find_run.outputs.RUN_ID }}
+      
       - name: Download MacOS x86 artifact
-        uses: bettermarks/action-artifact-download@0.3.0
+        uses: actions/download-artifact@v3
         with:
-          repo: membrane-io/mnode
-          token: ${{ secrets.GITHUB }}
-          artifact_name: mctl-${{steps.version.outputs.VERSION}}-macos-x86.zip
-
+          name: mctl-${{steps.version.outputs.VERSION}}-macos-x86.zip
+          github-token: ${{ secrets.GITHUB }}
+          run-id: ${{ steps.find_run.outputs.RUN_ID }}
+      
       - name: Download MacOS Arm artifact
-        uses: bettermarks/action-artifact-download@0.3.0
+        uses: actions/download-artifact@v3
         with:
-          repo: membrane-io/mnode
-          token: ${{ secrets.GITHUB }}
-          artifact_name: mctl-${{steps.version.outputs.VERSION}}-macos-arm.zip
-
+          name: mctl-${{steps.version.outputs.VERSION}}-macos-arm.zip
+          github-token: ${{ secrets.GITHUB }}
+          run-id: ${{ steps.find_run.outputs.RUN_ID }}
+      
       - name: Download Windows artifact
-        uses: bettermarks/action-artifact-download@0.3.0
+        uses: actions/download-artifact@v3
         with:
-          repo: membrane-io/mnode
-          token: ${{ secrets.GITHUB }}
-          artifact_name: mctl-${{steps.version.outputs.VERSION}}-windows.zip
+          name: mctl-${{steps.version.outputs.VERSION}}-windows.zip
+          github-token: ${{ secrets.GITHUB }}
+          run-id: ${{ steps.find_run.outputs.RUN_ID }}
+      
+      - name: Verify downloads
+        run: ls -la
 
       - name: Unzip zips
         run: |
@@ -205,4 +227,3 @@ jobs:
           files: |
             out/mctl-${{steps.version.outputs.VERSION}}-*.zip
             sha256.txt
-            
