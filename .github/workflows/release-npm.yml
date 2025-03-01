@@ -61,8 +61,7 @@ jobs:
           echo "${{ secrets.GITHUB }}" | gh auth login --with-token
           
           # Find the latest successful run that has the artifacts we need
-          LATEST_RUN_ID=$(gh api repos/membrane-io/mnode/actions/runs?status=completed&per_page=100 | \
-                         jq -r '.workflow_runs[] | select(.name == "Build") | .id' | head -n 1)
+          LATEST_RUN_ID=$(gh api 'repos/membrane-io/mnode/actions/runs?status=completed&per_page=100' | jq -r '.workflow_runs[] | select(.name == "Build mctl") | .id' | head -n 1)
           echo "RUN_ID=$LATEST_RUN_ID" >> "$GITHUB_OUTPUT"
           
           echo "Latest successful build run ID: $LATEST_RUN_ID"
