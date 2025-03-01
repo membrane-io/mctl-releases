@@ -1,0 +1,215 @@
+name: Publish to NPM
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'juan/publish-npm'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          repository: membrane-io/mnode
+          token: ${{ secrets.GITHUB }}
+
+      - name: Determine version
+        id: version
+        run: |
+          cd mctl
+          echo "VERSION=$(cat Cargo.toml | grep -E '^version *= *".*' | awk '{print $3}' | tr -d '"')" >> "$GITHUB_OUTPUT"
+
+      - name: Verify Cargo Version
+        run: |
+          tag_version="${{ steps.version.outputs.VERSION }}"
+          cargo_version=$(cat mctl/Cargo.toml | grep -E '^version *= *".*' | awk '{print $3}' | tr -d '"')
+
+          if [ "$tag_version" != "$cargo_version" ]; then
+            echo "Tag version ($tag_version) and Cargo.toml version ($cargo_version) do not match. Aborting the workflow."
+            exit 1
+          fi
+      
+      - name: Verify if release exists
+        id: release_exists
+        run: |
+          existing_tags=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB }}" "https://api.github.com/repos/membrane-io/mnode/tags")
+          tag_version="${{ steps.version.outputs.VERSION }}"
+          tag_exists=false
+
+          for tag in $(echo "$existing_tags" | jq -r '.[].name'); do
+            if [ "$tag" = "$tag_version" ]; then
+              tag_exists=true
+              break
+            fi
+          done
+          if [ "$tag_exists" = true ]; then
+            echo "Release $tag_version already exists. Aborting the workflow."
+            exit 1
+          fi
+
+      - name: Find latest build workflow run ID
+        id: find_run
+        run: |
+          # Authenticate
+          echo "${{ secrets.GITHUB }}" | gh auth login --with-token
+          
+          # Find the latest successful run that has the artifacts we need
+          LATEST_RUN_ID=$(gh api 'repos/membrane-io/mnode/actions/runs?status=completed&per_page=100' | jq -r '.workflow_runs[] | select(.name == "Build mctl") | .id' | head -n 1)
+          echo "RUN_ID=$LATEST_RUN_ID" >> "$GITHUB_OUTPUT"
+          
+          echo "Latest successful build run ID: $LATEST_RUN_ID"
+      
+      - name: Download artifacts using GitHub CLI
+        run: |
+          # Create directory for artifacts
+          mkdir -p artifacts
+          cd artifacts
+          
+          # Download artifacts using GitHub CLI
+          gh run download ${{ steps.find_run.outputs.RUN_ID }} --repo membrane-io/mnode --name "mctl-${{steps.version.outputs.VERSION}}-linux-x86.zip"
+          # gh run download ${{ steps.find_run.outputs.RUN_ID }} --repo membrane-io/mnode --name "mctl-${{steps.version.outputs.VERSION}}-macos-x86.zip"
+          gh run download ${{ steps.find_run.outputs.RUN_ID }} --repo membrane-io/mnode --name "mctl-${{steps.version.outputs.VERSION}}-macos-arm.zip"
+          gh run download ${{ steps.find_run.outputs.RUN_ID }} --repo membrane-io/mnode --name "mctl-${{steps.version.outputs.VERSION}}-windows.zip"
+          
+          # Go back to working directory and list files
+          cd ..
+          ls -la artifacts
+
+      - name: Unzip zips
+        run: |
+          mkdir -p out/{linux-x86,macos-arm,macos-x86,windows}
+          unzip artifacts/mctl-${{steps.version.outputs.VERSION}}-linux-x86.zip -d out/linux-x86
+          # unzip artifacts/mctl-${{steps.version.outputs.VERSION}}-macos-x86.zip -d out/macos
+          unzip artifacts/mctl-${{steps.version.outputs.VERSION}}-macos-arm.zip -d out/macos-arm
+          unzip artifacts/mctl-${{steps.version.outputs.VERSION}}-windows.zip -d out/windows
+
+          # Rename and place in out
+          mv out/linux-x86/mctl out/mctl-linux
+          # mv out/macos/mctl out/mctl-macos
+          mv out/macos-arm/mctl out/mctl-macos-arm
+          mv out/windows/mctl.exe out/mctl-windows.exe
+
+          ls out
+
+      # Setup for NPM publishing
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Create NPM package structure
+        run: |
+          mkdir -p npm-package/bin
+          # Move binaries to the proper locations with correct names
+          cp out/mctl-linux npm-package/bin/mctl-linux
+          # cp out/mctl-macos npm-package/bin/mctl-macos
+          cp out/mctl-macos-arm npm-package/bin/mctl-macos-arm
+          cp out/mctl-windows.exe npm-package/bin/mctl.exe
+          chmod +x npm-package/bin/*
+
+      - name: Create package.json
+        run: |
+          cat > npm-package/package.json << EOL
+          {
+            "name": "@membrane/mctl",
+            "version": "${{ steps.version.outputs.VERSION }}",
+            "description": "Membrane CLI",
+            "bin": {
+              "mctl": "index.js"
+            },
+            "files": [
+              "bin/",
+              "index.js"
+            ],
+            "engines": {
+              "node": ">=12"
+            },
+            "os": [
+              "darwin",
+              "linux",
+              "win32"
+            ],
+            "repository": {
+              "type": "git",
+              "url": "git+https://github.com/membrane-io/mctl-releases.git"
+            },
+            "author": "Membrane",
+            "license": "MIT",
+            "bugs": {
+              "url": "https://github.com/membrane-io/mctl-releases/issues"
+            },
+            "homepage": "https://github.com/membrane-io/mctl-releases#readme"
+          }
+          EOL
+
+      - name: Create entry point script
+        run: |
+          cat > npm-package/index.js << 'EOL'
+          #!/usr/bin/env node
+
+          const { spawnSync } = require('child_process');
+          const path = require('path');
+          const fs = require('fs');
+          const os = require('os');
+
+          // Determine platform and architecture
+          const platform = os.platform();
+          const arch = os.arch();
+          
+          let binPath;
+          
+          if (platform === 'win32') {
+            binPath = path.join(__dirname, 'bin', 'mctl.exe');
+          } else if (platform === 'darwin') {
+            if (arch === 'arm64') {
+              binPath = path.join(__dirname, 'bin', 'mctl-macos-arm');
+            } else {
+              binPath = path.join(__dirname, 'bin', 'mctl-macos');
+            }
+          } else if (platform === 'linux') {
+            binPath = path.join(__dirname, 'bin', 'mctl-linux');
+          } else {
+            console.error(`Unsupported platform: ${platform}`);
+            process.exit(1);
+          }
+          
+          // Make sure the binary exists and is executable
+          try {
+            fs.accessSync(binPath, fs.constants.X_OK);
+          } catch (err) {
+            console.error(`Cannot execute binary at ${binPath}: ${err.message}`);
+            process.exit(1);
+          }
+          
+          // Execute the binary with all arguments passed through
+          const result = spawnSync(binPath, process.argv.slice(2), { stdio: 'inherit' });
+          
+          process.exit(result.status);
+          EOL
+          
+          chmod +x npm-package/index.js
+
+      - name: Publish to NPM
+        run: |
+          cd npm-package
+          npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      # Optional: Create GitHub release as well
+      - name: Compute SHA256
+        run: sha256sum out/mctl-*.zip > sha256.txt
+
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: "Membrane mctl"
+          tag_name: ${{steps.version.outputs.VERSION}}
+          fail_on_unmatched_files: false
+          token: ${{ secrets.GITHUB }}
+          files: |
+            out/mctl-${{steps.version.outputs.VERSION}}-*.zip
+            sha256.txt
