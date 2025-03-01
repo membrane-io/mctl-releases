@@ -34,7 +34,7 @@ jobs:
       - name: Verify if release exists
         id: release_exists
         run: |
-          existing_tags=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/repos/membrane-io/mnode/tags")
+          existing_tags=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB }}" "https://api.github.com/repos/membrane-io/mnode/tags")
           tag_version="${{ steps.version.outputs.VERSION }}"
           tag_exists=false
 
@@ -208,7 +208,7 @@ jobs:
           name: "Membrane mctl"
           tag_name: ${{steps.version.outputs.VERSION}}
           fail_on_unmatched_files: false
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GITHUB }}
           files: |
             out/mctl-${{steps.version.outputs.VERSION}}-*.zip
             sha256.txt
