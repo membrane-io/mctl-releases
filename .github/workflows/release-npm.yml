@@ -1,6 +1,10 @@
 name: Publish to NPM
 
-on: workflow_dispatch
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'juan/publish-npm'
 
 jobs:
   publish:
